@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:ini_berapa/screen/camera.dart';
 import 'package:ini_berapa/utils/bbox.dart';
 import 'package:ini_berapa/utils/labels.dart';
 import 'package:ini_berapa/utils/yolo.dart';
@@ -88,50 +89,63 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(title: const Text('YOLO')),
       body: ListView(
         children: [
-          InkWell(
-            onTap: () async {
-              final XFile? newImageFile =
-              await picker.pickImage(source: ImageSource.gallery);
-              if (newImageFile != null) {
-                setState(() {
-                  imageFile = File(newImageFile.path);
-                });
-                final image =
-                img.decodeImage(await newImageFile.readAsBytes())!;
-                imageWidth = image.width;
-                imageHeight = image.height;
-                inferenceOutput = model.infer(image);
-                updatePostprocess();
-              }
-            },
-            child: SizedBox(
-              height: maxImageWidgetHeight,
-              child: Center(
-                child: Stack(
-                  children: [
-                    if (imageFile == null)
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.file_open_outlined,
-                            size: 80,
-                          ),
-                          Text(
-                            'Pick an image',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                        ],
-                      )
-                    else
-                      Image.file(imageFile!),
-                    ...bboxesWidgets,
-                  ],
-                ),
+          SizedBox(
+            height: maxImageWidgetHeight,
+            child: Center(
+              child: Stack(
+                children: [
+                  if (imageFile == null)
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.image_outlined,
+                          size: 80,
+                        ),
+                        Text(
+                          'Pick an image or take a picture',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                      ],
+                    )
+                  else
+                    Image.file(imageFile!),
+                  ...bboxesWidgets,
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 30),
+          // const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.photo_library),
+                onPressed: () async {
+                  final XFile? newImageFile =
+                  await picker.pickImage(source: ImageSource.gallery);
+                  if (newImageFile != null) {
+                    processImage(newImageFile);
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.camera_alt),
+                onPressed: () async {
+                  final XFile? newImageFile = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CameraScreen(),
+                    ),
+                  );
+                  if (newImageFile != null) {
+                    processImage(newImageFile);
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Padding(
             padding: textPadding,
             child: Row(
@@ -228,6 +242,17 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  void processImage(XFile newImageFile) async {
+    setState(() {
+      imageFile = File(newImageFile.path);
+    });
+    final image = img.decodeImage(await newImageFile.readAsBytes())!;
+    imageWidth = image.width;
+    imageHeight = image.height;
+    inferenceOutput = model.infer(image);
+    updatePostprocess();
   }
 
   void updatePostprocess() {
