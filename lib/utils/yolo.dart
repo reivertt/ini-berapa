@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart';
 import 'package:ini_berapa/utils/nms.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class YoloModel {
   final String modelPath;
@@ -18,7 +19,62 @@ class YoloModel {
       );
 
   Future<void> init() async {
-    _interpreter = await Interpreter.fromAsset(modelPath);
+    try {
+      initializeInterpreter().then((interpreter) {
+          _interpreter = interpreter;
+      }).catchError((error) {
+        print(error);
+      });
+      debugPrint("Interpreter initialized successfully with GPU delegate.");
+    } catch (e) {
+      debugPrint("Failed to initialize interpreter: $e");
+    }
+
+  }
+
+  Future<Interpreter> initializeInterpreter() async {
+    Interpreter interpreter;
+
+    // --- First, try to load with the GPU delegate ---
+    try {
+      print("Attempting to load model with GPU delegate...");
+      final gpuDelegate = GpuDelegateV2();
+      // final gpuDelegate = GpuDelegateV2(
+      //   options: GpuDelegateOptionsV2(
+      //     isPrecisionLossAllowed: false,
+      //     inferencePreference: TfLiteGpuInferenceUsage.fastSingleAnswer,
+      //     inferencePriority1: TfLiteGpuInferencePriority.minLatency,
+      //     inferencePriority2: TfLiteGpuInferencePriority.auto,
+      //     inferencePriority3: TfLiteGpuInferencePriority.auto,
+      //   ),
+      // );
+
+      var interpreterOptions = InterpreterOptions()..addDelegate(gpuDelegate);
+      interpreter = await Interpreter.fromAsset(
+        modelPath,
+        options: interpreterOptions,
+      );
+      print("Interpreter loaded successfully with GPU delegate.");
+      return interpreter;
+    } catch (e) {
+      print('Failed to load model with GPU delegate: $e');
+      print('Retrying without a delegate...');
+    }
+
+    // --- If GPU fails, fall back to CPU ---
+    try {
+      var interpreterOptions = InterpreterOptions();
+      interpreter = await Interpreter.fromAsset(
+        modelPath,
+        options: interpreterOptions, // No delegate, uses CPU
+      );
+      print("Interpreter loaded successfully on CPU.");
+      return interpreter;
+    } catch (e) {
+      print('Failed to load model on CPU.');
+      // Handle the error appropriately in your app
+      throw Exception('Could not initialize the TFLite interpreter.');
+    }
   }
 
   List<List<double>> infer(Image image) {
@@ -39,8 +95,8 @@ class YoloModel {
 
     // output shape:
     // 1 : batch size
-    // 4 + 80: left, top, right, bottom and probabilities for each class
-    // 8400: num predictions
+    // 4 + 10: left, top, right, bottom and probabilities for each class
+    // 13125: num predictions
     final output = [
       List<List<double>>.filled(4 + numClasses, List<double>.filled(13125, 0))
     ];

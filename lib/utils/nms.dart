@@ -3,7 +3,7 @@ import 'dart:math';
 (List<int>, List<List<double>>, List<double>) nms(
     List<List<double>> rawOutput, {
       double confidenceThreshold = 0.7,
-      double iouThreshold = 0.4,
+      double iouThreshold = 0.1,
       bool agnostic = false,
     }) {
   List<int> bestClasses = [];
