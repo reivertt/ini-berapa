@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:ini_berapa/models/feedback.dart';
 
 class FeedbackDatabase {
   static Database? _database;
@@ -33,23 +34,30 @@ class FeedbackDatabase {
     );
   }
 
-  static Future<int> insertFeedback({
-    required String detectedValue,
-    required bool isCorrect,
-    String? actualValue,
-    String? imagePath,
-    double? confidenceScore,
-  }) async {
+  // static Future<int> insertFeedback({
+  //   required String detectedValue,
+  //   required bool isCorrect,
+  //   String? actualValue,
+  //   String? imagePath,
+  //   double? confidenceScore,
+  // }) async {
+  //   final db = await database;
+  //
+  //   return await db.insert(_tableName, {
+  //     'timestamp': DateTime.now().toIso8601String(),
+  //     'detected_value': detectedValue,
+  //     'is_correct': isCorrect ? 1 : 0,
+  //     'actual_value': actualValue,
+  //     'image_path': imagePath,
+  //     'confidence_score': confidenceScore,
+  //   });
+  // }
+
+  static Future<int> insertFeedback(Feedback feedback) async {
     final db = await database;
-    
-    return await db.insert(_tableName, {
-      'timestamp': DateTime.now().toIso8601String(),
-      'detected_value': detectedValue,
-      'is_correct': isCorrect ? 1 : 0,
-      'actual_value': actualValue,
-      'image_path': imagePath,
-      'confidence_score': confidenceScore,
-    });
+
+    // Use the .toMap() method from the Feedback model
+    return await db.insert(_tableName, feedback.toMap());
   }
 
   static Future<List<Map<String, dynamic>>> getAllFeedback() async {

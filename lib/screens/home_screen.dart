@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:ini_berapa/screens/camera_screen.dart';
-
+// import 'camera_screen_with_feedback.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CameraScreen()),
+      // MaterialPageRoute(builder: (context) => const CameraScreenWithFeedback()),
     );
   }
 

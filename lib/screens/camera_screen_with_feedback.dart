@@ -6,6 +6,8 @@ import 'package:ini_berapa/screens/result_screen.dart';
 import 'package:ini_berapa/screens/settings_screen.dart';
 import 'package:ini_berapa/screens/history_screen.dart';
 import 'package:ini_berapa/widgets/feedback_widget.dart';
+import 'package:ini_berapa/models/feedback.dart' as app_feedback;
+import 'package:ini_berapa/utils/feedback_database.dart';
 
 class CameraScreenWithFeedback extends StatefulWidget {
   const CameraScreenWithFeedback({super.key});
@@ -24,7 +26,8 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
   // Feedback related variables
   bool _showFeedback = false;
   String? _currentDetectedValue;
-  String? _lastDetectedValue; // To track changes
+  String? _capturedImagePath;
+  // String? _lastDetectedValue; // To track changes
 
   // Settings variables
   double _confidenceThreshold = 0.4;
@@ -78,48 +81,63 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
     _speak(instructions);
   }
 
-  // Simulate banknote detection (replace with your actual detection logic)
-  void _simulateBanknoteDetection(String detectedValue) {
-    // Check if this is a different banknote than the last one
-    if (_lastDetectedValue != detectedValue) {
-      setState(() {
-        _currentDetectedValue = detectedValue;
-        _lastDetectedValue = detectedValue;
-        _showFeedback = true;
-      });
-    }
+  void _showFeedbackPrompt(String detectedValue, String imagePath) {
+    setState(() {
+      _currentDetectedValue = detectedValue;
+      _capturedImagePath = imagePath;
+      _showFeedback = true;
+    });
+    _speak("Apakah hasil deteksi $detectedValue sudah benar?");
   }
+
+
+  // // Simulate banknote detection (replace with your actual detection logic)
+  // void _simulateBanknoteDetection(String detectedValue) {
+  //   // Check if this is a different banknote than the last one
+  //   if (_lastDetectedValue != detectedValue) {
+  //     setState(() {
+  //       _currentDetectedValue = detectedValue;
+  //       _lastDetectedValue = detectedValue;
+  //       _showFeedback = true;
+  //     });
+  //   }
+  // }
 
   void _handleFeedback(bool isCorrect, String? actualValue) {
-    // Handle feedback data here
-    // You can save to database, send to analytics, etc.
-    print('Feedback received:');
-    print('Detected: $_currentDetectedValue');
-    print('Is Correct: $isCorrect');
-    if (!isCorrect && actualValue != null) {
-      print('Actual Value: $actualValue');
-    }
-    
-    // You can save this to your SQLite database
+    // Save the feedback to the database
     _saveFeedbackToDatabase(isCorrect, actualValue);
+
+    // Give verbal confirmation and hide the feedback widget
+    if (isCorrect) {
+      _speak("Terima kasih atas konfirmasinya.");
+    } else {
+      _speak("Terima kasih atas masukannya. Data telah diperbarui.");
+    }
+    _dismissFeedback();
   }
 
-  void _saveFeedbackToDatabase(bool isCorrect, String? actualValue) {
-    // Implement your database saving logic here
-    // Example structure:
-    // {
-    //   'timestamp': DateTime.now().toIso8601String(),
-    //   'detected_value': _currentDetectedValue,
-    //   'is_correct': isCorrect,
-    //   'actual_value': actualValue,
-    //   'image_path': 'path/to/image' // if you want to save image reference
-    // }
+  Future<void> _saveFeedbackToDatabase(bool isCorrect, String? actualValue) async {
+    if (_currentDetectedValue == null) return;
+
+    // Use the prefix to specify YOUR Feedback class
+    final feedbackData = app_feedback.Feedback( // <-- This line is now fixed
+      timestamp: DateTime.now(),
+      detectedValue: _currentDetectedValue!,
+      isCorrect: isCorrect,
+      actualValue: actualValue,
+      imagePath: _capturedImagePath,
+    );
+
+    await FeedbackDatabase.insertFeedback(feedbackData);
+
+    debugPrint("FEEDBACK SAVED: {Detected: ${feedbackData.detectedValue}, Correct: ${feedbackData.isCorrect}, Actual: ${feedbackData.actualValue}}");
   }
 
   void _dismissFeedback() {
     setState(() {
       _showFeedback = false;
       _currentDetectedValue = null;
+      _capturedImagePath = null;
     });
   }
 
@@ -149,12 +167,11 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
       );
 
       // If a banknote was detected, show feedback
-      if (result != null && result is Map && result['detected_value'] != null) {
-        _simulateBanknoteDetection(result['detected_value']);
-      }
-
-      if(result != null && result == true && mounted) {
-         _speakCameraInstructions();
+      if (result is Map && result.containsKey('detected_label')) {
+        _showFeedbackPrompt(result['detected_label'], result['image_path']);
+      } else {
+        // If no detection or user just comes back, give instructions again.
+        _speakCameraInstructions();
       }
     } catch (e) {
       debugPrint('Error taking picture: $e');
@@ -200,6 +217,13 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    double scale = 1.0;
+    if (_isCameraInitialized) {
+      scale = 1 / (_cameraController!.value.aspectRatio * size.aspectRatio);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Arahkan Kamera"),
@@ -221,7 +245,12 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
         children: [
           !_isCameraInitialized
               ? const Center(child: CircularProgressIndicator())
-              : CameraPreview(_cameraController!),
+              : Center(
+            child: Transform.scale(
+              scale: scale,
+              child: CameraPreview(_cameraController!),
+            ),
+          ),
 
           // Capture button area
           Positioned(
@@ -237,14 +266,14 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
                   height: 120,
                   color: Colors.black.withOpacity(0.5),
                   child: Center(
-                    child: _isProcessing 
-                      ? const CircularProgressIndicator(color: Colors.white) 
-                      : const Icon(
-                          Icons.camera,
-                          color: Colors.white,
-                          size: 60,
-                          semanticLabel: "Ambil Gambar",
-                        ),
+                    child: _isProcessing
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Icon(
+                      Icons.camera,
+                      color: Colors.white,
+                      size: 60,
+                      semanticLabel: "Ambil Gambar",
+                    ),
                   ),
                 ),
               ),
@@ -263,18 +292,6 @@ class _CameraScreenWithFeedbackState extends State<CameraScreenWithFeedback> {
                 onDismiss: _dismissFeedback,
               ),
             ),
-
-          // Test button (remove in production)
-          Positioned(
-            top: 100,
-            right: 16,
-            child: FloatingActionButton(
-              mini: true,
-              onPressed: () => _simulateBanknoteDetection('Rp 50,000'),
-              child: const Icon(Icons.bug_report),
-              tooltip: 'Test Feedback (Remove in production)',
-            ),
-          ),
         ],
       ),
     );

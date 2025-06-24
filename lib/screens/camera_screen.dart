@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:ini_berapa/screens/result_screen.dart';
 import 'package:ini_berapa/screens/settings_screen.dart';
 import 'package:ini_berapa/screens/history_screen.dart';
+import 'package:ini_berapa/screens/result_screen_with_feedback.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -86,11 +87,13 @@ class _CameraScreenState extends State<CameraScreen> {
       final XFile imageFile = await _cameraController!.takePicture();
 
       if (!mounted) return;
-      // Tunggu hasil dari halaman result
-      final result = await Navigator.push(
+
+      // --- KEY CHANGE: Navigate to the new screen ---
+      await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ResultScreen(
+          // Call the new ResultWithFeedbackScreen
+          builder: (context) => ResultWithFeedbackScreen(
             imagePath: imageFile.path,
             confidenceThreshold: _confidenceThreshold,
             iouThreshold: _iouThreshold,
@@ -98,10 +101,13 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ),
       );
-      // --- PERUBAHAN DI SINI: Ucapkan instruksi lagi saat kembali ---
-      if(result != null && result == true && mounted) {
-         _speakCameraInstructions();
+
+      // When we return from the result screen, just re-speak the instructions.
+      // All feedback logic is now handled in the new screen.
+      if (mounted) {
+        _speakCameraInstructions();
       }
+
     } catch (e) {
       debugPrint('Error taking picture: $e');
       _speak("Gagal mengambil gambar. Silakan coba lagi.");

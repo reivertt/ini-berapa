@@ -36,6 +36,8 @@ class _ResultScreenState extends State<ResultScreen> {
   List<Widget> _boundingBoxes = [];
   File? _imageFile;
 
+  String? _bestDetectedLabel;
+
   @override
   void initState() {
     super.initState();
@@ -54,11 +56,11 @@ class _ResultScreenState extends State<ResultScreen> {
 
     await _detectObjectInImage();
   }
-  
+
   Future<void> _detectObjectInImage() async {
     final imageBytes = await _imageFile!.readAsBytes();
     final img.Image? originalImage = img.decodeImage(imageBytes);
-    
+
     if (originalImage != null && _yoloModel != null) {
       final (classes, bboxes, scores) = _yoloModel!.postprocess(
         _yoloModel!.infer(originalImage),
@@ -80,25 +82,19 @@ class _ResultScreenState extends State<ResultScreen> {
           }
         }
         if (bestIndex != -1) {
-          final String bestLabel = labels[classes[bestIndex]];
-          resultText = "Hasil deteksi: $bestLabel";
+          // --- MODIFIED: Store the clean label in our new state variable ---
+          _bestDetectedLabel = labels[classes[bestIndex]];
+          resultText = "Hasil deteksi: $_bestDetectedLabel";
 
-          // --- LOGIKA PENYIMPANAN YANG DIPASTIKAN ---
           final history = DetectionHistory(
-            label: bestLabel,
+            label: _bestDetectedLabel!,
             imagePath: widget.imagePath,
             timestamp: DateTime.now(),
           );
-          try {
-            await DatabaseHelper.instance.insertHistory(history);
-            debugPrint("SUKSES: Riwayat untuk '$bestLabel' telah disimpan ke database.");
-          } catch (e) {
-            debugPrint("ERROR SAAT MENYIMPAN: $e");
-          }
-          // --- AKHIR LOGIKA PENYIMPANAN ---
+          await DatabaseHelper.instance.insertHistory(history);
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _detectionResultText = resultText;
@@ -106,7 +102,7 @@ class _ResultScreenState extends State<ResultScreen> {
           _isLoading = false;
         });
       }
-      
+
       final String finalSpeech = "$resultText. Tekan tombol Ambil Gambar Lagi di bagian bawah layar untuk kembali ke kamera.";
       await _speak(finalSpeech);
     }
@@ -141,13 +137,21 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Map<String, dynamic>? navigationResult;
+    if (!_isLoading && _bestDetectedLabel != null) {
+      navigationResult = {
+        'detected_label': _bestDetectedLabel,
+        'image_path': widget.imagePath,
+      };
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Hasil Deteksi"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           tooltip: "Kembali ke kamera",
-          onPressed: () => Navigator.pop(context, true),
+          onPressed: () => Navigator.pop(context, navigationResult),
         ),
       ),
       body: _isLoading
@@ -204,7 +208,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     onPressed: () {
-                      Navigator.pop(context, true);
+                      Navigator.pop(context, navigationResult);
                     },
                   ),
                 )
