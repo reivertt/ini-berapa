@@ -13,15 +13,15 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  camera: ^0.10.6 # Menggunakan versi stabil yang teruji
-  flutter_tts: ^3.8.5 # Menggunakan versi stabil yang teruji
+  camera: ^0.11.1 # Menggunakan versi stabil yang teruji
+  flutter_tts: ^4.2.3 # Menggunakan versi stabil yang teruji
   
   # WAJIB DITAMBAHKAN: Untuk meminta izin akses kamera/mikrofon
   permission_handler: ^11.3.1
 
   # Dependensi Anda yang sudah ada (tidak diubah)
-  # tflite_flutter: ^0.10.4 # Temporarily disabled for web testing
-  image: ^4.1.7
+  tflite_flutter: ^0.11.0 # Temporarily disabled for web testing
+  image: ^4.5.4
   image_picker: ^1.1.2
 
   # TAMBAHKAN 3 PACKAGE DI BAWAH INI
@@ -40,4 +40,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/models/yolov8n.tflite
-    - assets/images/
+#    - assets/images/

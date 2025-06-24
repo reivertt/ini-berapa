@@ -146,6 +146,13 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    double scale = 1.0;
+    if (_isCameraInitialized) {
+      scale = 1 / (_cameraController!.value.aspectRatio * size.aspectRatio);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Arahkan Kamera"),
@@ -167,9 +174,13 @@ class _CameraScreenState extends State<CameraScreen> {
         children: [
           !_isCameraInitialized
               ? const Center(child: CircularProgressIndicator())
-              : CameraPreview(_cameraController!),
+              : Center(
+            child: Transform.scale(
+              scale: scale,
+              child: CameraPreview(_cameraController!),
+            ),
+          ),
 
-          // --- PERUBAHAN DI SINI: AREA TOMBOL LEBIH BESAR ---
           Positioned(
             bottom: 0,
             left: 0,
@@ -183,14 +194,14 @@ class _CameraScreenState extends State<CameraScreen> {
                   height: 120, // Area vertikal yang cukup besar
                   color: Colors.black.withOpacity(0.5), // Latar belakang semi-transparan
                   child: Center(
-                    child: _isProcessing 
-                      ? const CircularProgressIndicator(color: Colors.white) 
-                      : const Icon(
-                          Icons.camera,
-                          color: Colors.white,
-                          size: 60,
-                          semanticLabel: "Ambil Gambar",
-                        ),
+                    child: _isProcessing
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Icon(
+                      Icons.camera,
+                      color: Colors.white,
+                      size: 60,
+                      semanticLabel: "Ambil Gambar",
+                    ),
                   ),
                 ),
               ),

@@ -11,11 +11,14 @@ import 'dart:math';
 
   List<int> boxesToSave = [];
 
+  final numPredictions = rawOutput[0].length;
+  final numClasses = rawOutput.length - 4;
+
   // Take the argmax to the determine the best classes and scores
-  for (int i = 0; i < 13125; i++) {
+  for (int i = 0; i < numPredictions; i++) {
     double bestScore = 0;
     int bestCls = -1;
-    for (int j = 4; j < 14; j++) {
+    for (int j = 4; j < (4 + numClasses); j++) {
       double clsScore = rawOutput[j][i];
       if (clsScore > bestScore) {
         bestScore = clsScore;

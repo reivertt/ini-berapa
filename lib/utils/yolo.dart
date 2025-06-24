@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-// import 'package:tflite_flutter/tflite_flutter.dart'; // Temporarily disabled
+import 'package:tflite_flutter/tflite_flutter.dart'; // Temporarily disabled
 import 'package:image/image.dart';
 import 'package:ini_berapa/utils/nms.dart';
 
@@ -8,7 +8,7 @@ class YoloModel {
   final int inWidth;
   final int inHeight;
   final int numClasses;
-  // Interpreter? _interpreter; // Temporarily disabled
+  Interpreter? _interpreter; // Temporarily disabled
 
   YoloModel(
       this.modelPath,
@@ -18,20 +18,19 @@ class YoloModel {
       );
 
   Future<void> init() async {
-    // _interpreter = await Interpreter.fromAsset(modelPath); // Temporarily disabled
-    print('YoloModel init called - TensorFlow Lite temporarily disabled');
+    _interpreter = await Interpreter.fromAsset(modelPath); // Temporarily disabled
+    // print('YoloModel init called - TensorFlow Lite temporarily disabled');
   }
 
   List<List<double>> infer(Image image) {
-    // assert(_interpreter != null, 'The model must be initialized'); // Temporarily disabled
-    print('YoloModel infer called - returning mock data');
+    assert(_interpreter != null, 'The model must be initialized'); // Temporarily disabled
+    // print('YoloModel infer called - returning mock data');
     
     // Return mock detection data for testing
-    return [
-      [100.0, 100.0, 200.0, 200.0, 0.9, 0.0], // Mock detection: x, y, w, h, confidence, class
-    ];
+    // return [
+    //   [100.0, 100.0, 200.0, 200.0, 0.9, 0.0], // Mock detection: x, y, w, h, confidence, class
+    // ];
 
-    /* Original code temporarily commented out
     final imgResized = copyResize(image, width: inWidth, height: inHeight);
     final Float32List floatData = Float32List(inHeight * inWidth * 3);
     int floatIndex = 0;
@@ -57,7 +56,7 @@ class YoloModel {
     debugPrint(
         'Prediction time: ${DateTime.now().millisecondsSinceEpoch - predictionTimeStart} ms');
     return output[0];
-    */
+
   }
 
   (List<int>, List<List<double>>, List<double>) postprocess(
@@ -69,13 +68,13 @@ class YoloModel {
         bool agnostic = false,
       }) {
     // Mock postprocessing for testing
-    return (
-      [0], // Mock class
-      [[100.0, 100.0, 200.0, 200.0]], // Mock bbox
-      [0.9], // Mock score
-    );
+    // return (
+    //   [0], // Mock class
+    //   [[100.0, 100.0, 200.0, 200.0]], // Mock bbox
+    //   [0.9], // Mock score
+    // );
     
-    /* Original code temporarily commented out
+
     List<int> classes;
     List<List<double>> bboxes;
     List<double> scores;
@@ -95,7 +94,7 @@ class YoloModel {
       bbox[3] *= imageHeight;
     }
     return (classes, bboxes, scores);
-    */
+
   }
 
   (List<int>, List<List<double>>, List<double>) inferAndPostprocess(

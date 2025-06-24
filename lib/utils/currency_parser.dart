@@ -2,6 +2,8 @@ int parseCurrencyValue(String label) {
   final cleanLabel = label.toLowerCase().replaceAll(' rupiah', '').replaceAll('-', ' ');
   
   switch (cleanLabel) {
+    case '100 perak':
+      return 100;
     case 'seribu':
     case '1000 perak':
       return 1000;
